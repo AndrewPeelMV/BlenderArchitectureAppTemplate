@@ -1300,6 +1300,8 @@ class OPS_properties(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         if context.object:
+            if context.object.type == 'CAMERA':
+                return True
             if ISWALL in context.object and context.object.parent:
                 return True
             elif ISROOMMESH in context.object and context.object.parent:
@@ -1316,38 +1318,58 @@ class OPS_properties(bpy.types.Operator):
     def invoke(self,context,event):
         wm = context.window_manager
         self.obj = context.object
-        
         return wm.invoke_props_dialog(self, width=400)
+
+    def draw_camera_properties(self,layout,obj):
+        col = layout.column(align=True)
+        col.prop(obj,'name',text="Camera Name")        
+        col.prop(obj,'location')
 
     def draw_wall_properties(self,layout,wall):
         layout.label(self.obj.name)
         col = layout.column(align=True)
         col.prop(self.obj,'name',text="Wall Name")
         col.separator()
-        col.prop(wall.obj_x,'location',index=0,text="Wall Length")
-        col.prop(wall.obj_y,'location',index=1,text="Wall Depth")
-        col.prop(wall.obj_z,'location',index=2,text="Wall Height")        
+        row = col.row(align=True)
+        row.prop(wall.obj_x,'location',index=0,text="Wall Length")
+        row.prop(wall.obj_x,'hide',text="")
+        row = col.row(align=True)
+        row.prop(wall.obj_y,'location',index=1,text="Wall Depth")
+        row.prop(wall.obj_y,'hide',text="")
+        row = col.row(align=True)
+        row.prop(wall.obj_z,'location',index=2,text="Wall Height")      
+        row.prop(wall.obj_z,'hide',text="")  
         layout.prop(wall.obj_bp,'location',text="Location")
         layout.prop(wall.obj_bp,'rotation_euler',index=2,text="Rotation")
 
     def draw_room_mesh(self,layout,wall):
         layout.label(self.obj.name)
-        layout.prop(wall.obj_x,'location',index=0,text="Object Length")
-        layout.prop(wall.obj_y,'location',index=1,text="Object Width")
-        layout.prop(wall.obj_z,'location',index=2,text="Object Height")        
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.prop(wall.obj_x,'location',index=0,text="Object Length")
+        row.prop(wall.obj_x,'hide',text="")
+        
+        row = col.row(align=True)
+        row.prop(wall.obj_y,'location',index=1,text="Object Width")
+        row.prop(wall.obj_y,'hide',text="")
+        
+        row = col.row(align=True)
+        row.prop(wall.obj_z,'location',index=2,text="Object Height")  
+        row.prop(wall.obj_z,'hide',text="")    
+          
         layout.prop(wall.obj_bp,'location',text="Location")
         layout.prop(wall.obj_bp,'rotation_euler',text="Rotation")
-
-
 
     def draw(self, context):
         layout = self.layout
         box = layout.box()
         assembly = Assembly(context.object.parent)
+        if context.object.type == 'CAMERA':
+            self.draw_camera_properties(box,context.object)
         if ISWALL in context.object:
             self.draw_wall_properties(box, assembly)
         if ISROOMMESH in context.object:
-            self.draw_wall_properties(box, assembly)
+            self.draw_room_mesh(box, assembly)
         
         # OPERATOR: Apply Hooks or Edit Mesh
 
