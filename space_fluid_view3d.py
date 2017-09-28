@@ -23,6 +23,10 @@ from bpy.types import Header, Menu, Panel, Operator
 from bpy.app.translations import pgettext_iface as iface_ #for decimate modifier
 # from mv import utils, fd_types, unit
 from . import unit, utils
+from bl_ui.properties_grease_pencil_common import (
+        GreasePencilDataPanel,
+        GreasePencilPaletteColorPanel,
+        )
 from bpy.props import (StringProperty,
                        BoolProperty,
                        IntProperty,
@@ -1252,6 +1256,65 @@ class OPS_snapping_options(bpy.types.Operator):
             elif snap_element == 'FACE':
                 layout.prop(toolsettings, "use_snap_project")
 
+class OPS_viewport_options(bpy.types.Operator):
+    bl_idname = "fd_general.viewport_options"
+    bl_label = "Viewport Options"
+
+#     def check(self, context):
+#         return True
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        return {'FINISHED'}
+        
+    def invoke(self,context,event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=400)
+        
+    def draw(self, context):
+        layout = self.layout
+        view = context.space_data
+
+        camera_box = layout.box()
+        camera_box.label("Viewport Options",icon='SCENE')
+        camera_box.prop(context.space_data,"lens",text="Viewport lens angle")
+        row = camera_box.row()
+        row.prop(context.space_data,"clip_start",text="Viewport Clipping Start")
+        row.prop(context.space_data,"clip_end",text="Viewport Clipping End")
+        layout.separator()
+        camera_box.prop(context.space_data,"lock_camera",text="Lock Camera to View")
+
+        col = camera_box.column()
+        col.prop(view, "show_only_render")
+        col.prop(view, "show_world")
+
+        col = camera_box.column()
+        col.prop(view, "show_outline_selected")
+        col.prop(view, "show_all_objects_origin")
+        col.prop(view, "show_relationship_lines")
+
+        grid_box = layout.box()
+        grid_box.label("Grid Options",icon='GRID')
+        
+        col = grid_box.column()
+        split = col.split(percentage=0.55)
+        split.prop(view, "show_floor", text="Grid Floor")
+
+        row = split.row(align=True)
+        row.prop(view, "show_axis_x", text="X", toggle=True)
+        row.prop(view, "show_axis_y", text="Y", toggle=True)
+        row.prop(view, "show_axis_z", text="Z", toggle=True)
+
+        sub = col.column(align=True)
+        sub.active = bool(view.show_floor or view.region_quadviews or not view.region_3d.is_perspective)
+        subsub = sub.column(align=True)
+        subsub.active = view.show_floor
+        subsub.prop(view, "grid_lines", text="Lines")
+        sub.prop(view, "grid_scale", text="Scale")
+
 class OPS_add_camera(Operator):
     bl_idname = "fd_object.add_camera"
     bl_label = "Add Camera"
@@ -1327,7 +1390,6 @@ class VIEW3D_HT_header(Header):
         layout = self.layout
 
         obj = context.active_object
-#         toolsettings = context.tool_settings
 
         row = layout.row(align=True)
         row.separator()
@@ -1348,31 +1410,11 @@ class VIEW3D_HT_header(Header):
         row = layout.row()
         row.prop(context.space_data,"pivot_point",text="")
         
-#         row = layout.row(align=True)
-#         row.prop(context.space_data,"show_manipulator",text="")
-#         row.prop(context.space_data,"transform_manipulators",text="")
-#         row.prop(context.space_data,"transform_orientation",text="")
-    
-#         if not obj or obj.mode not in {'SCULPT', 'VERTEX_PAINT', 'WEIGHT_PAINT', 'TEXTURE_PAINT'}:
-#             snap_element = toolsettings.snap_element
-#             row = layout.row(align=True)
-#             row.prop(toolsettings, "use_snap", text="")
-#             row.prop(toolsettings, "snap_element", icon_only=True)
-#             if snap_element == 'INCREMENT':
-#                 row.prop(toolsettings, "use_snap_grid_absolute", text="")
-#             else:
-#                 row.prop(toolsettings, "snap_target", text="")
-#                 if obj:
-#                     if obj.mode in {'OBJECT', 'POSE'} and snap_element != 'VOLUME':
-#                         row.prop(toolsettings, "use_snap_align_rotation", text="")
-#                     elif obj.mode == 'EDIT':
-#                         row.prop(toolsettings, "use_snap_self", text="")
-# 
-#             if snap_element == 'VOLUME':
-#                 row.prop(toolsettings, "use_snap_peel_object", text="")
-#             elif snap_element == 'FACE':
-#                 row.prop(toolsettings, "use_snap_project", text="")
-                
+        row = layout.row(align=True)
+        row.prop(context.space_data,"show_manipulator",text="")
+        row.prop(context.space_data,"transform_manipulators",text="")
+        row.prop(context.space_data,"transform_orientation",text="")
+        
         if obj:
             if obj.type in {'MESH','CURVE'}:
                 if obj.mode == 'EDIT':
@@ -1382,9 +1424,6 @@ class VIEW3D_HT_header(Header):
                 
         row = layout.row(align=True)
         row.operator('view3d.ruler',text="Ruler")
-        
-
-
         layout.operator('fd_general.create_screen_shot',text="",icon='SCENE')
             
 class VIEW3D_MT_fd_menus(Menu):
@@ -1401,6 +1440,7 @@ class VIEW3D_MT_fd_menus(Menu):
         layout.menu("VIEW3D_MT_fluidtools",icon='MODIFIER',text="   Tools   ")
         layout.menu("VIEW3D_MT_selectiontools",icon='RESTRICT_SELECT_OFF',text="   Select   ")
         layout.menu("MENU_cursor_tools",icon='CURSOR',text="   Cursor   ")
+        layout.menu("MENU_options",icon='SETTINGS',text="   Options   ")
 
 # class PANEL_object_properties(Panel):
 #     bl_space_type = "VIEW_3D"
@@ -1570,8 +1610,8 @@ class VIEW3D_MT_fluidview(Menu):
         layout.separator()
 
         layout.operator("screen.area_dupli",icon='GHOST')
-        layout.operator("screen.region_quadview",icon='VIEW3D_VEC')
-        layout.operator("screen.screen_full_area",icon='FULLSCREEN_ENTER')
+        layout.operator("screen.region_quadview",icon='IMGDISPLAY')
+        layout.operator("screen.screen_full_area",icon='FULLSCREEN_ENTER')    
         
         layout.separator()
         
@@ -1664,6 +1704,15 @@ class VIEW3D_MT_origintools(Menu):
         layout.operator("object.origin_set",text="Origin to Cursor",icon='CURSOR').type = 'ORIGIN_CURSOR'
         layout.operator("object.origin_set",text="Origin to Geometry",icon='CLIPUV_HLT').type = 'ORIGIN_GEOMETRY'
 
+class MENU_options(Menu):
+    bl_label = "Options"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("fd_general.viewport_options",icon='SOLID')
+        layout.operator("fd_general.snapping_options",icon='SNAP_ON')
+        
+
 class VIEW3D_MT_shadetools(Menu):
     bl_context = "objectmode"
     bl_label = "Object Shading"
@@ -1721,6 +1770,21 @@ class VIEW3D_MT_producttools(Menu):
             layout.operator('fd_assembly.delete_selected_product',text="Delete Selected Product",icon='X')
         else:
             layout.label("A Product is not selected")
+        
+class VIEW3D_PT_grease_pencil(GreasePencilDataPanel, Panel):
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'TOOLS'
+    bl_category = "Grease Pencil"
+    
+    # NOTE: this is just a wrapper around the generic GP Panel
+
+
+class VIEW3D_PT_grease_pencil_palettecolor(GreasePencilPaletteColorPanel, Panel):
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'TOOLS'
+    bl_category = "Grease Pencil"
+
+    # NOTE: this is just a wrapper around the generic GP Panel        
         
 class VIEW3D_MT_assemblytools(Menu):
     bl_context = "objectmode"
@@ -2100,16 +2164,28 @@ classes = [
 #            MENU_active_group_prompts,
            MENU_mesh_display,
            MENU_vertex_groups,
+           MENU_options,
+           VIEW3D_PT_grease_pencil,
+           VIEW3D_PT_grease_pencil_palettecolor,
            OPS_change_shademode,
            OPS_create_screen_shot,
            OPS_change_mode,
            OPS_snapping_options,
            OPS_set_cursor_location,
-           OPS_add_camera
+           OPS_add_camera,
+           OPS_viewport_options
            ]
 
 def register():
 
+    userpref = bpy.context.user_preferences
+    inputs = userpref.inputs
+    
+    inputs.select_mouse = 'LEFT'
+    userpref.view.use_zoom_to_mouse = True
+    userpref.view.use_auto_perspective = True
+    userpref.system.use_region_overlap = True
+    
     for c in classes:
         bpy.utils.register_class(c)
 
