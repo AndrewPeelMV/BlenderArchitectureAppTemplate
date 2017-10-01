@@ -121,6 +121,15 @@ def update_object_selection(self,context):
         obj.select = True
         context.scene.active_object = obj
     
+def update_world_selection(self,context):
+    pass  
+    
+def update_scene_selection(self,context):
+    pass 
+    
+def update_group_selection(self,context):
+    pass
+    
 class LayerGroup(PropertyGroup):
     use_toggle = BoolProperty(name="", default=False)
     use_wire = BoolProperty(name="", default=False)
@@ -130,15 +139,18 @@ class LayerGroup(PropertyGroup):
 
 class Outliner(PropertyGroup):
     outliner_tabs = bpy.props.EnumProperty(name="Outliner Tabs",
-        items=[('SCENE',"Scenes","Show the Scene Options"),
-               ('WORLD',"Worlds","Show the World Options"),
+        items=[('SCENES',"Scenes","Show the Scene Options"),
+               ('WORLDS',"Worlds","Show the World Options"),
                ('OBJECTS',"Objects","Show the World Options"),
                ('GROUPS',"Groups","Show the Group Options"),
                ('LAYERS',"Layers","Show the Layer Options")],
-        default='SCENE')
+        default='SCENES')
     
     selected_object_index = IntProperty(name="Selected Object Index", default=0, update = update_object_selection)
-
+    selected_world_index = IntProperty(name="Selected World Index", default=0, update = update_world_selection)
+    selected_scene_index = IntProperty(name="Selected Scene Index", default=0, update = update_scene_selection)
+    selected_group_index = IntProperty(name="Selected Group Index", default=0, update = update_scene_selection)
+    
 class SCENE_OT_namedlayer_group_add(Operator):
     """Add and select a new layer group"""
     bl_idname = "scene.namedlayer_group_add"
@@ -538,18 +550,62 @@ class SCENE_PT_namedlayer_layers(Panel):
         if len(scene.objects) == 0:
             layout.label(text="No objects in scene")
 
+    def draw_scenes(self,layout,context):
+        if len(bpy.data.scenes) > 0:
+            layout.template_list("FD_UL_scenes", "", bpy.data, "scenes", context.scene.outliner, "selected_scene_index", rows=4)
+            unit = context.scene.unit_settings
+            
+            split = layout.split(percentage=0.35)
+            split.label("Unit Type:")
+            split.prop(unit, "system", text="")
+            split = layout.split(percentage=0.35)
+            split.label("Angle:")
+            split.prop(unit, "system_rotation", text="")
+
+    def draw_worlds(self,layout,context):
+        scene = context.scene
+        if len(bpy.data.worlds) > 0:
+            layout.template_list("FD_UL_worlds", "", bpy.data, "worlds", scene.outliner, "selected_world_index", rows=4)
+            layout.operator("world.new")
+            layout.template_preview(context.scene.world)
+        
+    def draw_objects(self,layout,context):
+        scene = context.scene
+        layout.menu("INFO_MT_fluidaddobject",text="Add Object")
+        if len(scene.objects) > 0:
+            layout.template_list("FD_UL_objects", "", scene, "objects", scene.outliner, "selected_object_index", rows=4)  
+
+    def draw_groups(self,layout,context):
+        scene = context.scene
+        if len(scene.objects) > 0:
+            layout.template_list("FD_UL_groups", "", bpy.data, "groups", scene.outliner, "selected_group_index", rows=4)     
+            
     def draw(self, context):
         scene = context.scene
         layout = self.layout
         
         box = layout.box()
-        row = box.row()
-        row.prop(scene.outliner,'outliner_tabs',expand=True)
+        row = box.row(align=True)
+        row.prop_enum(scene.outliner, "outliner_tabs", 'SCENES', icon='SCENE_DATA', text="Scenes") 
+        row.prop_enum(scene.outliner, "outliner_tabs", 'WORLDS', icon='WORLD_DATA', text="Worlds") 
+        row.prop_enum(scene.outliner, "outliner_tabs", 'OBJECTS', icon='OBJECT_DATA', text="Objects") 
+        row.prop_enum(scene.outliner, "outliner_tabs", 'GROUPS', icon='OUTLINER_OB_GROUP_INSTANCE', text="Groups") 
+        row.prop_enum(scene.outliner, "outliner_tabs", 'LAYERS', icon='RENDERLAYERS', text="Layers") 
+
+        if scene.outliner.outliner_tabs == 'SCENES':
+            self.draw_scenes(box, context)
+                
+        if scene.outliner.outliner_tabs == 'WORLDS':
+            self.draw_worlds(box, context)
+
+        if scene.outliner.outliner_tabs == 'OBJECTS':
+            self.draw_objects(box, context)
+
+        if scene.outliner.outliner_tabs == 'GROUPS':
+            self.draw_groups(box, context)
+
         if scene.outliner.outliner_tabs == 'LAYERS':
             self.draw_layers_interface(box, context)
-        if scene.outliner.outliner_tabs == 'OBJECTS':
-            if len(scene.objects) > 0:
-                box.template_list("FD_UL_objects", "", scene, "objects", scene.outliner, "selected_object_index", rows=4)
 
 class SCENE_UL_namedlayer_groups(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -620,10 +676,32 @@ class SCENE_PT_namedlayer_groups(Panel):
 class FD_UL_objects(UIList):
     
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        layout.label(item.name)
+        if item.type == 'MESH':
+            layout.label(item.name,icon='OUTLINER_OB_MESH')
+        if item.type == 'EMPTY':
+            layout.label(item.name,icon='OUTLINER_OB_EMPTY')
+        if item.type == 'CAMERA':
+            layout.label(item.name,icon='OUTLINER_OB_CAMERA')
+        if item.type == 'LAMP':
+            layout.label(item.name,icon='OUTLINER_OB_LAMP')                        
         layout.prop(item,'hide',emboss=False,icon_only=True)
         layout.prop(item,'hide_select',emboss=False,icon_only=True)
         layout.prop(item,'hide_render',emboss=False,icon_only=True)
+
+class FD_UL_worlds(UIList):
+    
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        layout.label(item.name,icon='WORLD_DATA')
+
+class FD_UL_scenes(UIList):
+    
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        layout.label(item.name,icon='SCENE_DATA')
+
+class FD_UL_groups(UIList):
+    
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        layout.label(item.name,icon='GROUP')
 
 # Add-ons Preferences Update Panel
 
@@ -695,6 +773,9 @@ def register():
 #     bpy.utils.register_class(SCENE_PT_namedlayer_groups)
     bpy.utils.register_class(LayerMAddonPreferences)
     bpy.utils.register_class(FD_UL_objects)
+    bpy.utils.register_class(FD_UL_worlds)
+    bpy.utils.register_class(FD_UL_scenes)
+    bpy.utils.register_class(FD_UL_groups)
     
 #     bpy.utils.register_module(__name__)
 #     bpy.types.Scene.layergroups = CollectionProperty(type=LayerGroup)
@@ -724,6 +805,9 @@ def unregister():
     bpy.utils.unregister_class(SCENE_PT_namedlayer_groups)
     bpy.utils.unregister_class(LayerMAddonPreferences)
     bpy.utils.unregister_class(FD_UL_objects)
+    bpy.utils.unregister_class(FD_UL_worlds)
+    bpy.utils.unregister_class(FD_UL_scenes)
+    bpy.utils.unregister_class(FD_UL_groups)
     
     bpy.app.handlers.scene_update_post.remove(check_init_data)
     del bpy.types.Scene.layergroups

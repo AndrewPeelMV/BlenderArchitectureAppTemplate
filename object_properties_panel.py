@@ -1103,11 +1103,11 @@ def draw_object_materials(layout,obj,context):
             row.operator("object.material_slot_select", text="Select")
             row.operator("object.material_slot_deselect", text="Deselect")
 
-    split = layout.split(percentage=0.65)
+#     split = layout.split(percentage=0.65)
 
     if ob:
-        split.template_ID(ob, "active_material", new="material.new")
-        row = split.row()
+        layout.template_ID(ob, "active_material", new="material.new")
+        row = layout.row()
 
         if slot:
             row.prop(slot, "link", text="")
@@ -1129,6 +1129,8 @@ def draw_object_materials(layout,obj,context):
         row.operator("object.material_slot_assign", text="Assign")
         row.operator("object.material_slot_select", text="Select")
         row.operator("object.material_slot_deselect", text="Deselect")
+        
+    layout.operator('fd_general.open_new_window',text="Open Material Editor",icon='NODETREE').space_type = 'NODE_EDITOR'
 
 def draw_object_drivers(layout,obj):
     if obj:
@@ -1205,6 +1207,23 @@ class PANEL_object_properties(bpy.types.Panel):
         if obj:
             draw_object_properties(layout,obj,context)
             
+class OPS_open_new_window(bpy.types.Operator):
+    bl_idname = "fd_general.open_new_window"
+    bl_label = "Open New Window"
+
+    space_type = bpy.props.StringProperty(name="Space Type")
+    
+    @classmethod
+    def poll(cls, context):
+        return True
+        
+    def execute(self, context):
+        bpy.ops.screen.userpref_show('INVOKE_DEFAULT')
+        for window in context.window_manager.windows:
+            if len(window.screen.areas) == 1 and window.screen.areas[0].type == 'USER_PREFERENCES':
+                window.screen.areas[0].type = self.space_type
+        return {'FINISHED'}            
+            
 def get_scene_props(scene):
     return scene.obj_panel
             
@@ -1215,9 +1234,12 @@ class scene_props(bpy.types.PropertyGroup):
         description="Select the Object Type.",
         default='INFO')       
             
+            
+            
 def register():
     bpy.utils.register_class(PANEL_object_properties)
     bpy.utils.register_class(scene_props)
+    bpy.utils.register_class(OPS_open_new_window)
     bpy.types.Scene.obj_panel = bpy.props.PointerProperty(type = scene_props)
     
 def unregister():

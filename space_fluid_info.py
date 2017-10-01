@@ -36,6 +36,8 @@ class INFO_HT_header(Header):
         if window.screen.show_fullscreen:
             layout.operator("screen.back_to_previous", icon='SCREEN_BACK', text="Back to Previous")
             layout.separator()
+        else:
+            layout.template_ID(context.window, "screen", new="screen.new", unlink="screen.delete")
         layout.separator()
         if context.active_object:
             if context.active_object.mode == 'EDIT':
@@ -111,7 +113,7 @@ class INFO_MT_fluidfile(Menu):
         layout.menu("INFO_MT_units",icon='LINENUMBERS_ON',text="Units")
         layout.separator()
         layout.operator_context = 'INVOKE_AREA'
-        layout.operator("fd_general.save_startup_file", icon='SAVE_PREFS')
+        layout.operator("fd_general.save_startup_file", icon='SAVE_PREFS') 
     
         layout.separator()
         
@@ -124,6 +126,20 @@ class INFO_MT_fluidfile(Menu):
 
         layout.menu("INFO_MT_file_import", icon='IMPORT')
         layout.menu("INFO_MT_file_export", icon='EXPORT')
+        
+        layout.separator()
+    
+        if any(bpy.utils.app_template_paths()):
+            app_template = context.user_preferences.app_template
+            if app_template:
+                layout.operator(
+                    "wm.read_factory_settings",
+                    text="Load Factory Template Settings",
+                    icon='LOAD_FACTORY',
+                ).app_template = app_template
+            del app_template
+        
+        layout.menu("USERPREF_MT_app_templates", icon='FILE_BLEND')        
         
         layout.separator()
         
@@ -228,8 +244,8 @@ class INFO_MT_fluidhelp(Menu):
         layout.operator("wm.url_open", text="Microvellum e-Support", icon='HELP').url = "http://support.microvellum.com"
         layout.operator("wm.url_open", text="Microvellum Website", icon='URL').url = "http://www.microvellum.com"
         layout.separator()
-        layout.operator("wm.url_open", text="Blender Manual", icon='HELP').url = "http://wiki.blender.org/index.php/Doc:2.6/Manual"
-        layout.operator("wm.url_open", text="Blender Release Log", icon='URL').url = "http://www.blender.org/development/release-logs/blender-269"
+        layout.operator("wm.url_open", text="Blender Manual", icon='HELP').url = "https://docs.blender.org/manual/en/dev/"
+        layout.operator("wm.url_open", text="Blender Release Log", icon='URL').url = "http://wiki.blender.org/index.php/Dev:Ref/Release_Notes/%d.%d" % bpy.app.version[:2]
         layout.separator()
         layout.operator("wm.url_open", text="Blender Website", icon='URL').url = "http://www.blender.org"
         layout.operator("wm.url_open", text="Python API Reference", icon='URL').url = bpy.types.WM_OT_doc_view._prefix
@@ -246,22 +262,22 @@ class INFO_MT_fluid_tutorials(Menu):
 
     def draw(self, context):
         layout = self.layout
-        layout.label("Getting Started Videos")
-        layout.operator("wm.url_open", text="01 - Understanding the User Interface", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Getting_Started_Videos/01-Understanding_the_User_Interface.mp4"
-        layout.operator("wm.url_open", text="02 - Navigating the 3D Viewport", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Getting_Started_Videos/02-Navigating_the_3D_Viewport.mp4"
-        layout.operator("wm.url_open", text="03 - Creating Rooms", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Getting_Started_Videos/03-Creating_Rooms.mp4"
-        layout.operator("wm.url_open", text="04 - Working with Products", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Getting_Started_Videos/04-Working_with_Products.mp4"
-        layout.operator("wm.url_open", text="05 - Creating Renderings", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Getting_Started_Videos/05-Creating_Renderings.mp4"
-        layout.separator()
-        layout.label("Design Tutorials")
-        layout.operator("wm.url_open", text="Creating a Reach In Closet", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Reach_In_Closet_Training.mp4"
-        layout.operator("wm.url_open", text="Creating a Walk In Closet", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Walk_in_Closet_Training.mp4"
-        layout.operator("wm.url_open", text="Creating a Face Frame Kitchen", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Designing_A_Face_Frame_Kitchen.mp4"
-        layout.separator()
-        layout.label("Quick Tip Videos")
-        layout.operator("wm.url_open", text="Speed Up Renderings", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Quick_Tip_Videos/Speed_Up_Renderings.mp4"
-        layout.operator("wm.url_open", text="Working with Number Controls", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Quick_Tip_Videos/Working_with_Number_Controls.mp4"
-        layout.operator("wm.url_open", text="Changing Wall Shapes", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Quick_Tip_Videos/Changing_the_Wall_Shape.mp4"
+#         layout.label("Getting Started Videos")
+#         layout.operator("wm.url_open", text="01 - Understanding the User Interface", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Getting_Started_Videos/01-Understanding_the_User_Interface.mp4"
+#         layout.operator("wm.url_open", text="02 - Navigating the 3D Viewport", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Getting_Started_Videos/02-Navigating_the_3D_Viewport.mp4"
+#         layout.operator("wm.url_open", text="03 - Creating Rooms", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Getting_Started_Videos/03-Creating_Rooms.mp4"
+#         layout.operator("wm.url_open", text="04 - Working with Products", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Getting_Started_Videos/04-Working_with_Products.mp4"
+#         layout.operator("wm.url_open", text="05 - Creating Renderings", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Getting_Started_Videos/05-Creating_Renderings.mp4"
+#         layout.separator()
+#         layout.label("Design Tutorials")
+#         layout.operator("wm.url_open", text="Creating a Reach In Closet", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Reach_In_Closet_Training.mp4"
+#         layout.operator("wm.url_open", text="Creating a Walk In Closet", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Walk_in_Closet_Training.mp4"
+#         layout.operator("wm.url_open", text="Creating a Face Frame Kitchen", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Designing_A_Face_Frame_Kitchen.mp4"
+#         layout.separator()
+#         layout.label("Quick Tip Videos")
+#         layout.operator("wm.url_open", text="Speed Up Renderings", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Quick_Tip_Videos/Speed_Up_Renderings.mp4"
+#         layout.operator("wm.url_open", text="Working with Number Controls", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Quick_Tip_Videos/Working_with_Number_Controls.mp4"
+#         layout.operator("wm.url_open", text="Changing Wall Shapes", icon='SEQUENCE').url = "http://www.microvellum.com/Download/Video/FluidDesignerVideo/Quick_Tip_Videos/Changing_the_Wall_Shape.mp4"
         
 class INFO_MT_create_rendering(Menu):
     bl_label = "Rendering"
@@ -383,6 +399,10 @@ class OPS_render_settings(bpy.types.Operator):
         linestyle = rl.freestyle_settings.linesets[0].linestyle
         
         box = layout.box()
+        row = box.row(align=True)
+        if rd.has_multiple_engines:
+            row.prop(rd, "engine", text="Rendering Engine")               
+        
 #         row = box.row(align=True)
 #         row.prop_enum(ui,"render_type_tabs", 'PRR',icon='RENDER_STILL',text="Photo Realistic Render")
 #         row.prop_enum(ui,"render_type_tabs", 'NPR',icon='SNAP_FACE',text="Line Drawing")
