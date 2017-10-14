@@ -1438,9 +1438,9 @@ class VIEW3D_MT_fd_menus(Menu):
         layout.menu("VIEW3D_MT_fluidview",icon='VIEWZOOM',text="   View   ")
         layout.menu("INFO_MT_fluidaddobject",icon='GREASEPENCIL',text="   Add   ")
         layout.menu("VIEW3D_MT_fluidtools",icon='MODIFIER',text="   Tools   ")
-        layout.menu("VIEW3D_MT_selectiontools",icon='RESTRICT_SELECT_OFF',text="   Select   ")
-        layout.menu("MENU_cursor_tools",icon='CURSOR',text="   Cursor   ")
-        layout.menu("MENU_options",icon='SETTINGS',text="   Options   ")
+#         layout.menu("VIEW3D_MT_selectiontools",icon='RESTRICT_SELECT_OFF',text="   Select   ")
+#         layout.menu("MENU_cursor_tools",icon='CURSOR',text="   Cursor   ")
+#         layout.menu("MENU_options",icon='SETTINGS',text="   Options   ")
 
 # class PANEL_object_properties(Panel):
 #     bl_space_type = "VIEW_3D"
@@ -1615,7 +1615,7 @@ class VIEW3D_MT_fluidview(Menu):
         
         layout.separator()
         
-        layout.menu("MENU_viewport_settings",icon='SCRIPTPLUGINS',text="Viewport Settings")
+        layout.operator("fd_general.viewport_options",text="Viewport Settings",icon='SCRIPTPLUGINS')
         
 class INFO_MT_fluidaddobject(Menu):
     bl_label = "Add Object"
@@ -1665,9 +1665,10 @@ class VIEW3D_MT_fluidtools(Menu):
         layout = self.layout
         layout.menu("VIEW3D_MT_objecttools",icon='OBJECT_DATA')
         layout.menu("VIEW3D_MT_grouptools",icon='GROUP')
-        layout.menu("VIEW3D_MT_assemblytools",icon='OUTLINER_DATA_LATTICE')
-        layout.menu("VIEW3D_MT_producttools",icon='OUTLINER_OB_LATTICE')
-        layout.menu("VIEW3D_MT_dimensiontools",icon='ALIGN')
+        layout.menu("MENU_cursor_tools",icon='CURSOR')
+        layout.menu("VIEW3D_MT_selectiontools",icon='MAN_TRANS')
+        layout.separator()
+        layout.operator("fd_general.snapping_options",icon='SNAP_ON')
 
 class VIEW3D_MT_transformtools(Menu):
     bl_context = "objectmode"
@@ -1681,7 +1682,7 @@ class VIEW3D_MT_transformtools(Menu):
 
 class VIEW3D_MT_selectiontools(Menu):
     bl_context = "objectmode"
-    bl_label = "Selection"
+    bl_label = "Selection Tools"
 
     def draw(self, context):
         layout = self.layout
@@ -1728,11 +1729,16 @@ class VIEW3D_MT_objecttools(Menu):
 
     def draw(self, context):
         layout = self.layout
-        layout.menu("VIEW3D_MT_transformtools",icon='MAN_TRANS')
+        layout.operator("transform.translate",text='Grab',icon='MAN_TRANS')
+        layout.operator("transform.rotate",icon='MAN_ROT')
+        layout.operator("transform.resize",text="Scale",icon='MAN_SCALE')        
+#         layout.menu("VIEW3D_MT_transformtools",icon='MAN_TRANS')
         layout.separator()
         layout.operator("object.duplicate_move",icon='PASTEDOWN')
         layout.operator("object.convert", text="Convert to Mesh",icon='MOD_REMESH').target = 'MESH'
         layout.operator("object.join",icon='ROTATECENTER')
+        layout.separator()
+        layout.menu("VIEW3D_MT_selectiontools",icon='MOD_MULTIRES')            
         layout.separator()
         layout.menu("VIEW3D_MT_origintools",icon='SPACE2')
         layout.separator()
