@@ -1,6 +1,7 @@
 import bpy
 import math
 from bpy.app.translations import pgettext_iface as iface_ #for decimate modifier
+from . import unit, utils
 
 enum_object_tabs = [('INFO'," ","Show the Main Information"),
                     ('DISPLAY',"","Show Options for how the Object is Displayed"),
@@ -1143,31 +1144,31 @@ def draw_object_drivers(layout,obj):
                 box = layout.box()
                 row = box.row()
                 DriverName = DR.data_path
-#                 if DriverName in {"location","rotation_euler","dimensions" ,"lock_scale",'lock_location','lock_rotation'}:
-#                     if DR.array_index == 0:
-#                         DriverName = DriverName + " X"
-#                     if DR.array_index == 1:
-#                         DriverName = DriverName + " Y"
-#                     if DR.array_index == 2:
-#                         DriverName = DriverName + " Z"                     
-#                 value = eval('bpy.data.objects["' + obj.name + '"].' + DR.data_path)
-#                 if type(value).__name__ == 'str':
-#                     row.label(DriverName + " = " + str(value),icon='AUTO')
-#                 elif type(value).__name__ == 'float':
-#                     row.label(DriverName + " = " + str(unit.meter_to_active_unit(value)),icon='AUTO')
-#                 elif type(value).__name__ == 'int':
-#                     row.label(DriverName + " = " + str(value),icon='AUTO')
-#                 elif type(value).__name__ == 'bool':
-#                     row.label(DriverName + " = " + str(value),icon='AUTO')
-#                 elif type(value).__name__ == 'bpy_prop_array':
-#                     row.label(DriverName + " = " + str(value[DR.array_index]),icon='AUTO')
-#                 elif type(value).__name__ == 'Vector':
-#                     row.label(DriverName + " = " + str(unit.meter_to_active_unit(value[DR.array_index])),icon='AUTO')
-#                 elif type(value).__name__ == 'Euler':
-#                     row.label(DriverName + " = " + str(unit.meter_to_active_unit(value[DR.array_index])),icon='AUTO')
-#                 else:
-#                     row.label(DriverName + " = " + str(type(value)),icon='AUTO')
-# 
+                if DriverName in {"location","rotation_euler","dimensions" ,"lock_scale",'lock_location','lock_rotation'}:
+                    if DR.array_index == 0:
+                        DriverName = DriverName + " X"
+                    if DR.array_index == 1:
+                        DriverName = DriverName + " Y"
+                    if DR.array_index == 2:
+                        DriverName = DriverName + " Z"                     
+                value = eval('bpy.data.objects["' + obj.name + '"].' + DR.data_path)
+                if type(value).__name__ == 'str':
+                    row.label(DriverName + " = " + str(value),icon='AUTO')
+                elif type(value).__name__ == 'float':
+                    row.label(DriverName + " = " + str(unit.meter_to_active_unit(value)),icon='AUTO')
+                elif type(value).__name__ == 'int':
+                    row.label(DriverName + " = " + str(value),icon='AUTO')
+                elif type(value).__name__ == 'bool':
+                    row.label(DriverName + " = " + str(value),icon='AUTO')
+                elif type(value).__name__ == 'bpy_prop_array':
+                    row.label(DriverName + " = " + str(value[DR.array_index]),icon='AUTO')
+                elif type(value).__name__ == 'Vector':
+                    row.label(DriverName + " = " + str(unit.meter_to_active_unit(value[DR.array_index])),icon='AUTO')
+                elif type(value).__name__ == 'Euler':
+                    row.label(DriverName + " = " + str(unit.meter_to_active_unit(value[DR.array_index])),icon='AUTO')
+                else:
+                    row.label(DriverName + " = " + str(type(value)),icon='AUTO')
+ 
 #                 props = row.operator("fd_driver.add_variable_to_object",text="",icon='ZOOMIN')
 #                 props.object_name = obj.name
 #                 props.data_path = DR.data_path
@@ -1179,9 +1180,9 @@ def draw_object_drivers(layout,obj):
 #                     props.var_object_name = obj_bp.name
 #                     props.data_path = DR.data_path
 #                     props.array_index = DR.array_index
-#                 utils.draw_driver_expression(box,DR)
-# #                 draw_add_variable_operators(box,obj.name,DR.data_path,DR.array_index)
-#                 utils.draw_driver_variables(box,DR,obj.name)
+                utils.draw_driver_expression(box,DR)
+#                 draw_add_variable_operators(box,obj.name,DR.data_path,DR.array_index)
+                utils.draw_driver_variables(box,DR,obj.name)
 
 class PANEL_object_properties(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
