@@ -141,6 +141,7 @@ class Outliner(PropertyGroup):
     outliner_tabs = bpy.props.EnumProperty(name="Outliner Tabs",
         items=[('SCENES',"Scenes","Show the Scene Options"),
                ('WORLDS',"Worlds","Show the World Options"),
+               ('MATERIALS',"Materials","Show the Material Options"),
                ('OBJECTS',"Objects","Show the World Options"),
                ('GROUPS',"Groups","Show the Group Options"),
                ('LAYERS',"Layers","Show the Layer Options")],
@@ -148,6 +149,7 @@ class Outliner(PropertyGroup):
     
     selected_object_index = IntProperty(name="Selected Object Index", default=0, update = update_object_selection)
     selected_world_index = IntProperty(name="Selected World Index", default=0, update = update_world_selection)
+    selected_material_index = IntProperty(name="Selected Material Index", default=0)
     selected_scene_index = IntProperty(name="Selected Scene Index", default=0, update = update_scene_selection)
     selected_group_index = IntProperty(name="Selected Group Index", default=0, update = update_scene_selection)
     
@@ -564,10 +566,16 @@ class SCENE_PT_namedlayer_layers(Panel):
 
     def draw_worlds(self,layout,context):
         scene = context.scene
+        layout.operator("world.new")
         if len(bpy.data.worlds) > 0:
             layout.template_list("FD_UL_worlds", "", bpy.data, "worlds", scene.outliner, "selected_world_index", rows=4)
-            layout.operator("world.new")
             layout.template_preview(context.scene.world)
+        
+    def draw_materials(self,layout,context):
+        scene = context.scene
+        layout.operator("material.new")
+        if len(bpy.data.materials) > 0:
+            layout.template_list("FD_UL_materials", "", bpy.data, "materials", scene.outliner, "selected_material_index", rows=4)
         
     def draw_objects(self,layout,context):
         scene = context.scene
@@ -585,9 +593,12 @@ class SCENE_PT_namedlayer_layers(Panel):
         layout = self.layout
         
         box = layout.box()
-        row = box.row(align=True)
+        col = box.column(align=True)
+        row = col.row(align=True)
         row.prop_enum(scene.outliner, "outliner_tabs", 'SCENES', icon='SCENE_DATA', text="Scenes") 
         row.prop_enum(scene.outliner, "outliner_tabs", 'WORLDS', icon='WORLD_DATA', text="Worlds") 
+        row.prop_enum(scene.outliner, "outliner_tabs", 'MATERIALS', icon='MATERIAL', text="Materials") 
+        row = col.row(align=True)
         row.prop_enum(scene.outliner, "outliner_tabs", 'OBJECTS', icon='OBJECT_DATA', text="Objects") 
         row.prop_enum(scene.outliner, "outliner_tabs", 'GROUPS', icon='OUTLINER_OB_GROUP_INSTANCE', text="Groups") 
         row.prop_enum(scene.outliner, "outliner_tabs", 'LAYERS', icon='RENDERLAYERS', text="Layers") 
@@ -597,6 +608,9 @@ class SCENE_PT_namedlayer_layers(Panel):
                 
         if scene.outliner.outliner_tabs == 'WORLDS':
             self.draw_worlds(box, context)
+
+        if scene.outliner.outliner_tabs == 'MATERIALS':
+            self.draw_materials(box, context)
 
         if scene.outliner.outliner_tabs == 'OBJECTS':
             self.draw_objects(box, context)
@@ -693,6 +707,11 @@ class FD_UL_worlds(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         layout.label(item.name,icon='WORLD_DATA')
 
+class FD_UL_materials(UIList):
+    
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        layout.label(item.name,icon='MATERIAL')
+
 class FD_UL_scenes(UIList):
     
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -774,8 +793,10 @@ def register():
     bpy.utils.register_class(LayerMAddonPreferences)
     bpy.utils.register_class(FD_UL_objects)
     bpy.utils.register_class(FD_UL_worlds)
+    bpy.utils.register_class(FD_UL_materials)
     bpy.utils.register_class(FD_UL_scenes)
     bpy.utils.register_class(FD_UL_groups)
+    
     
 #     bpy.utils.register_module(__name__)
 #     bpy.types.Scene.layergroups = CollectionProperty(type=LayerGroup)
@@ -806,6 +827,7 @@ def unregister():
     bpy.utils.unregister_class(LayerMAddonPreferences)
     bpy.utils.unregister_class(FD_UL_objects)
     bpy.utils.unregister_class(FD_UL_worlds)
+    bpy.utils.unregister_class(FD_UL_materials)
     bpy.utils.unregister_class(FD_UL_scenes)
     bpy.utils.unregister_class(FD_UL_groups)
     
