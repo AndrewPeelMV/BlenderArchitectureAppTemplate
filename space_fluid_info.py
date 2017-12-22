@@ -379,6 +379,12 @@ class OPS_render_settings(bpy.types.Operator):
     bl_idname = "fd_scene.render_settings"
     bl_label = "Render Settings"
     
+    room_builder_tabs = bpy.props.EnumProperty(name="Room Builder Tabs",
+        items=[('MAIN',"Main Settings","Displays the Main Rendering Options"),
+               ('LIGHTING',"Lighting","Library of Room Assets"),
+               ('2D',"2D Views","Creates 2D Views For your Room")],
+        default='MAIN')    
+    
     def execute(self, context):
         return {'FINISHED'}
     
@@ -393,8 +399,10 @@ class OPS_render_settings(bpy.types.Operator):
         layout = self.layout
         scene = bpy.context.scene
         rd = scene.render
+        cycles = scene.cycles
         image_settings = rd.image_settings
 #         ui = context.scene.mv.ui
+        
         rl = rd.layers.active
         linestyle = rl.freestyle_settings.linesets[0].linestyle
         
@@ -402,6 +410,9 @@ class OPS_render_settings(bpy.types.Operator):
         row = box.row(align=True)
         if rd.has_multiple_engines:
             row.prop(rd, "engine", text="Rendering Engine")               
+        
+        row = box.row()
+        row.prop(cycles, "device", text="CPU")
         
 #         row = box.row(align=True)
 #         row.prop_enum(ui,"render_type_tabs", 'PRR',icon='RENDER_STILL',text="Photo Realistic Render")
@@ -427,18 +438,14 @@ class OPS_render_settings(bpy.types.Operator):
         row = box.row()
         row.label(text="Use Transparent Film:",icon='SEQUENCE')
         row.prop(scene.cycles,"film_transparent",text='')
-            
-#         if ui.render_type_tabs == 'NPR':
+
         row = box.row()
-        row.label(text="Image Format:",icon='IMAGE_DATA')
-        row.prop(image_settings,"file_format",text="")
-        row = box.row()
-        row.label(text="Display Mode:",icon='RENDER_RESULT')
-        row.prop(rd,"display_mode",text="")
-        row = box.row()
-        row.prop(linestyle, "color", text="Line Color")
-        row = box.row()
-        row.prop(bpy.data.worlds[0], "horizon_color", text="Background Color")
+        row.prop(rd, "use_freestyle", text="Use Freestyle")       
+        if rd.use_freestyle: 
+            row = box.row()
+            row.prop(linestyle, "color", text="Line Color")
+            row = box.row()
+            row.prop(bpy.data.worlds[0], "horizon_color", text="Background Color")
 
 classes = [
            INFO_MT_fluidfile,

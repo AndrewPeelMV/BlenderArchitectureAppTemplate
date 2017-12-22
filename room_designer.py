@@ -1297,17 +1297,27 @@ class OPS_properties(bpy.types.Operator):
 
     obj = None
 
+    lock_camera = bpy.props.BoolProperty(name="Lock Camera to View")
+
     @classmethod
     def poll(cls, context):
         if context.object:
             if context.object.type == 'CAMERA':
                 return True
+            if context.object.type == 'LAMP':
+                return True            
             if ISWALL in context.object and context.object.parent:
                 return True
             elif ISROOMMESH in context.object and context.object.parent:
                 return True
             else:
                 return False
+
+    def __del__(self):
+        if self.lock_camera == True:
+            bpy.context.space_data.lock_camera = True
+        else:
+            bpy.context.space_data.lock_camera = False
 
     def check(self,context):
         return True
@@ -1316,14 +1326,87 @@ class OPS_properties(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self,context,event):
+        #Needed for camera properties
+        self.lock_camera = context.space_data.lock_camera 
+        
         wm = context.window_manager
         self.obj = context.object
         return wm.invoke_props_dialog(self, width=400)
 
-    def draw_camera_properties(self,layout,obj):
+    def draw_camera_properties(self,layout,context):
+        obj = context.object
+        cam = obj.data
+        ccam = cam.cycles        
+        rd = context.scene.render
         col = layout.column(align=True)
         col.prop(obj,'name',text="Camera Name")        
-        col.prop(obj,'location')
+        split = col.split()
+        split.prop(obj,'location')
+        split.prop(obj,'rotation_euler',text="Rotation")
+        
+        cam_opt_box_1 = layout.box()
+        cam_opt_box_1.label("Camera Options:")
+        row = cam_opt_box_1.row(align=True)
+        row.prop(self,'lock_camera')
+        row = cam_opt_box_1.row(align=True)
+        row.label(text="Render Size:",icon='STICKY_UVS_VERT')
+        row.prop(rd, "resolution_x", text="X")
+        row.prop(rd, "resolution_y", text="Y")
+        cam_opt_box_1.prop(cam, "type", expand=False, text="Camera Type")
+        split = cam_opt_box_1.split()
+        col = split.column()
+        if cam.type == 'PERSP':
+            row = col.row()
+            if cam.lens_unit == 'MILLIMETERS':
+                row.prop(cam, "lens")
+            elif cam.lens_unit == 'FOV':
+                row.prop(cam, "angle")
+            row.prop(cam, "lens_unit", text="")
+
+        if cam.type == 'ORTHO':
+            col.prop(cam, "ortho_scale")
+
+        if cam.type == 'PANO':
+            engine = bpy.context.scene.render.engine
+            if engine == 'CYCLES':
+                ccam = cam.cycles
+                col.prop(ccam, "panorama_type", text="Panorama Type")
+                if ccam.panorama_type == 'FISHEYE_EQUIDISTANT':
+                    col.prop(ccam, "fisheye_fov")
+                elif ccam.panorama_type == 'FISHEYE_EQUISOLID':
+                    row = col.row()
+                    row.prop(ccam, "fisheye_lens", text="Lens")
+                    row.prop(ccam, "fisheye_fov")
+            elif engine == 'BLENDER_RENDER':
+                row = col.row()
+                if cam.lens_unit == 'MILLIMETERS':
+                    row.prop(cam, "lens")
+                elif cam.lens_unit == 'FOV':
+                    row.prop(cam, "angle")
+                row.prop(cam, "lens_unit", text="")
+        
+        row = cam_opt_box_1.row()
+#         row.menu("CAMERA_MT_presets", text=bpy.types.CAMERA_MT_presets.bl_label)         
+        row.prop_menu_enum(cam, "show_guide")            
+        row = cam_opt_box_1.row()
+        split = row.split()
+        col = split.column()
+        col.prop(cam, "clip_start", text="Clipping Start")
+        col.prop(cam, "clip_end", text="Clipping End")      
+        col = row.column()         
+        col.prop(bpy.context.scene.cycles,"film_transparent",text="Transparent Film")   
+        
+        
+        dof_box = layout.box()
+        dof_box.label(text="Depth of Field:")
+        row = dof_box.row()
+        row.label("Focus:")
+        row = dof_box.row(align=True)
+        row.prop(cam, "dof_object", text="")
+        col = row.column()
+        sub = col.row()
+        sub.active = cam.dof_object is None
+        sub.prop(cam, "dof_distance", text="Distance")
 
     def draw_wall_properties(self,layout,wall):
         layout.label(self.obj.name)
@@ -1331,13 +1414,16 @@ class OPS_properties(bpy.types.Operator):
         col.prop(self.obj,'name',text="Wall Name")
         col.separator()
         row = col.row(align=True)
-        row.prop(wall.obj_x,'location',index=0,text="Wall Length")
+        row.label("Wall Length:")
+        row.prop(wall.obj_x,'location',index=0,text="")
         row.prop(wall.obj_x,'hide',text="")
         row = col.row(align=True)
-        row.prop(wall.obj_y,'location',index=1,text="Wall Depth")
+        row.label("Wall Depth:")
+        row.prop(wall.obj_y,'location',index=1,text="")
         row.prop(wall.obj_y,'hide',text="")
         row = col.row(align=True)
-        row.prop(wall.obj_z,'location',index=2,text="Wall Height")      
+        row.label("Wall Height:")
+        row.prop(wall.obj_z,'location',index=2,text="")      
         row.prop(wall.obj_z,'hide',text="")  
         layout.prop(wall.obj_bp,'location',text="Location")
         layout.prop(wall.obj_bp,'rotation_euler',index=2,text="Rotation")
@@ -1346,26 +1432,95 @@ class OPS_properties(bpy.types.Operator):
         layout.label(self.obj.name)
         col = layout.column(align=True)
         row = col.row(align=True)
-        row.prop(wall.obj_x,'location',index=0,text="Object Length")
+        row.label("Object Length:")
+        row.prop(wall.obj_x,'location',index=0,text="")
         row.prop(wall.obj_x,'hide',text="")
         
         row = col.row(align=True)
-        row.prop(wall.obj_y,'location',index=1,text="Object Width")
+        row.label("Object Width:")
+        row.prop(wall.obj_y,'location',index=1,text="")
         row.prop(wall.obj_y,'hide',text="")
         
         row = col.row(align=True)
-        row.prop(wall.obj_z,'location',index=2,text="Object Height")  
+        row.label("Object Height:")
+        row.prop(wall.obj_z,'location',index=2,text="")  
         row.prop(wall.obj_z,'hide',text="")    
-          
-        layout.prop(wall.obj_bp,'location',text="Location")
-        layout.prop(wall.obj_bp,'rotation_euler',text="Rotation")
+        
+        split = layout.split()
+        
+        split.prop(wall.obj_bp,'location',text="Location")
+        split.prop(wall.obj_bp,'rotation_euler',text="Rotation")
+
+    def draw_lamp_properties(self,layout,context):
+        obj = context.object
+
+        lamp = obj.data
+        clamp = lamp.cycles
+        cscene = bpy.context.scene.cycles  
+        
+        emissionNode = None
+        mathNode = None
+        
+        if lamp.node_tree:
+            if "Emission" in lamp.node_tree.nodes:
+                emissionNode = lamp.node_tree.nodes["Emission"]
+            if "Math" in lamp.node_tree.nodes:
+                mathNode = lamp.node_tree.nodes["Math"]
+    
+            type_box = layout.box()
+            type_box.label("Lamp Type:")     
+            row = type_box.row()
+            row.prop(lamp, "type", expand=True)
+            
+            if lamp.type in {'POINT', 'SUN', 'SPOT'}:
+                type_box.prop(lamp, "shadow_soft_size", text="Shadow Size")
+            elif lamp.type == 'AREA':
+                type_box.prop(lamp, "shape", text="")
+                sub = type_box.column(align=True)
+    
+                if lamp.shape == 'SQUARE':
+                    sub.prop(lamp, "size")
+                elif lamp.shape == 'RECTANGLE':
+                    sub.prop(lamp, "size", text="Size X")
+                    sub.prop(lamp, "size_y", text="Size Y")
+    
+            if cscene.progressive == 'BRANCHED_PATH':
+                type_box.prop(clamp, "samples")
+    
+            if lamp.type == 'HEMI':
+                type_box.label(text="Not supported, interpreted as sun lamp")         
+    
+            options_box = layout.box()
+            options_box.label("Lamp Options:")
+            if emissionNode:
+                row = options_box.row()
+                split = row.split(percentage=0.3)
+                split.label("Lamp Color:")
+                split.prop(emissionNode.inputs[0],"default_value",text="")  
+                
+            row = options_box.row()
+            split = row.split(percentage=0.3)
+            split.label("Lamp Strength:")            
+            if mathNode:   
+                split.prop(mathNode.inputs[0],"default_value",text="") 
+            else:          
+                split.prop(emissionNode.inputs[1], "default_value",text="")
+                
+            row = options_box.row()        
+            split = row.split(percentage=0.4)     
+            split.prop(clamp, "cast_shadow",text="Cast Shadows")
+            split.prop(clamp, "use_multiple_importance_sampling")       
+        else:
+            layout.operator('cycles.use_shading_nodes')
 
     def draw(self, context):
         layout = self.layout
         box = layout.box()
         assembly = Assembly(context.object.parent)
         if context.object.type == 'CAMERA':
-            self.draw_camera_properties(box,context.object)
+            self.draw_camera_properties(box,context)
+        if context.object.type == 'LAMP':
+            self.draw_lamp_properties(box,context)            
         if ISWALL in context.object:
             self.draw_wall_properties(box, assembly)
         if ISROOMMESH in context.object:
@@ -1485,7 +1640,7 @@ def register():
     bpy.utils.register_class(OPS_place_furniture)
     bpy.utils.register_class(OPS_place_area_lamp)
     bpy.utils.register_class(OPS_properties)
-    bpy.utils.register_class(OPS_lamp_properties)
+#     bpy.utils.register_class(OPS_lamp_properties)
     bpy.utils.register_class(OPS_room_properties)
     bpy.utils.register_class(OPS_temp_operator)
     
@@ -1500,3 +1655,7 @@ def register():
         kmi = obj_km.keymap_items.new('wm.console_toggle', 'HOME', 'PRESS', shift=True)
         kmi = obj_km.keymap_items.new('blender_design.properties', 'RIGHTMOUSE', 'PRESS')
         kmi = obj_km.keymap_items.new('blender_design.lamp_properties', 'RIGHTMOUSE', 'PRESS')
+        
+        obj_km = wm.keyconfigs.addon.keymaps.new(name='Mesh', space_type='EMPTY')
+        kmi = obj_km.keymap_items.new('blender_design.lamp_properties', 'RIGHTMOUSE', 'PRESS')
+        

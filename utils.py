@@ -1322,55 +1322,57 @@ def draw_object_data(layout,obj):
         
         emissionNode = None
         mathNode = None
-        
-        if "Emission" in lamp.node_tree.nodes:
-            emissionNode = lamp.node_tree.nodes["Emission"]
-        if "Math" in lamp.node_tree.nodes:
-            mathNode = lamp.node_tree.nodes["Math"]
-
-        type_box = box.box()
-        type_box.label("Lamp Type:")     
-        row = type_box.row()
-        row.prop(lamp, "type", expand=True)
-        
-        if lamp.type in {'POINT', 'SUN', 'SPOT'}:
-            type_box.prop(lamp, "shadow_soft_size", text="Shadow Size")
-        elif lamp.type == 'AREA':
-            type_box.prop(lamp, "shape", text="")
-            sub = type_box.column(align=True)
-
-            if lamp.shape == 'SQUARE':
-                sub.prop(lamp, "size")
-            elif lamp.shape == 'RECTANGLE':
-                sub.prop(lamp, "size", text="Size X")
-                sub.prop(lamp, "size_y", text="Size Y")
-
-        if cscene.progressive == 'BRANCHED_PATH':
-            type_box.prop(clamp, "samples")
-
-        if lamp.type == 'HEMI':
-            type_box.label(text="Not supported, interpreted as sun lamp")         
-
-        options_box = box.box()
-        options_box.label("Lamp Options:")
-        if emissionNode:
+        if lamp.node_tree:
+            if "Emission" in lamp.node_tree.nodes:
+                emissionNode = lamp.node_tree.nodes["Emission"]
+            if "Math" in lamp.node_tree.nodes:
+                mathNode = lamp.node_tree.nodes["Math"]
+    
+            type_box = box.box()
+            type_box.label("Lamp Type:")     
+            row = type_box.row()
+            row.prop(lamp, "type", expand=True)
+            
+            if lamp.type in {'POINT', 'SUN', 'SPOT'}:
+                type_box.prop(lamp, "shadow_soft_size", text="Shadow Size")
+            elif lamp.type == 'AREA':
+                type_box.prop(lamp, "shape", text="")
+                sub = type_box.column(align=True)
+    
+                if lamp.shape == 'SQUARE':
+                    sub.prop(lamp, "size")
+                elif lamp.shape == 'RECTANGLE':
+                    sub.prop(lamp, "size", text="Size X")
+                    sub.prop(lamp, "size_y", text="Size Y")
+    
+            if cscene.progressive == 'BRANCHED_PATH':
+                type_box.prop(clamp, "samples")
+    
+            if lamp.type == 'HEMI':
+                type_box.label(text="Not supported, interpreted as sun lamp")         
+    
+            options_box = box.box()
+            options_box.label("Lamp Options:")
+            if emissionNode:
+                row = options_box.row()
+                split = row.split(percentage=0.3)
+                split.label("Lamp Color:")
+                split.prop(emissionNode.inputs[0],"default_value",text="")  
+                
             row = options_box.row()
             split = row.split(percentage=0.3)
-            split.label("Lamp Color:")
-            split.prop(emissionNode.inputs[0],"default_value",text="")  
-            
-        row = options_box.row()
-        split = row.split(percentage=0.3)
-        split.label("Lamp Strength:")            
-        if mathNode:   
-            split.prop(mathNode.inputs[0],"default_value",text="") 
-        else:          
-            split.prop(emissionNode.inputs[1], "default_value",text="")
-            
-        row = options_box.row()        
-        split = row.split(percentage=0.4)     
-        split.prop(clamp, "cast_shadow",text="Cast Shadows")
-        split.prop(clamp, "use_multiple_importance_sampling")
+            split.label("Lamp Strength:")            
+            if mathNode:   
+                split.prop(mathNode.inputs[0],"default_value",text="") 
+            else:          
+                split.prop(emissionNode.inputs[1], "default_value",text="")
+                
+            row = options_box.row()        
+            split = row.split(percentage=0.4)     
+            split.prop(clamp, "cast_shadow",text="Cast Shadows")
+            split.prop(clamp, "use_multiple_importance_sampling")
+        else:
+            layout.operator('cycles.use_shading_nodes')
             
     if obj.type == 'CAMERA':
         box = layout.box()

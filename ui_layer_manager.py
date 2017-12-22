@@ -125,7 +125,9 @@ def update_world_selection(self,context):
     pass  
     
 def update_scene_selection(self,context):
-    pass 
+    context.screen.scene = bpy.data.scenes[self.selected_scene_index] 
+    if context.screen.scene.outliner.selected_scene_index != self.selected_scene_index:
+        context.screen.scene.outliner.selected_scene_index = self.selected_scene_index
     
 def update_group_selection(self,context):
     pass
@@ -151,7 +153,7 @@ class Outliner(PropertyGroup):
     selected_world_index = IntProperty(name="Selected World Index", default=0, update = update_world_selection)
     selected_material_index = IntProperty(name="Selected Material Index", default=0)
     selected_scene_index = IntProperty(name="Selected Scene Index", default=0, update = update_scene_selection)
-    selected_group_index = IntProperty(name="Selected Group Index", default=0, update = update_scene_selection)
+    selected_group_index = IntProperty(name="Selected Group Index", default=0, update = update_group_selection)
     
 class SCENE_OT_namedlayer_group_add(Operator):
     """Add and select a new layer group"""
@@ -440,7 +442,22 @@ class SCENE_OT_namedlayer_show_all(Operator):
         return {'FINISHED'}
 
 
-class SCENE_PT_namedlayer_layers(Panel):
+class SCENE_OT_create_new_scene(Operator):
+    """Creates a New Scene"""
+    bl_idname = "scene.create_new_scene"
+    bl_label = "Create New Scene"
+
+    def execute(self, context):
+        bpy.ops.scene.new(type='EMPTY')
+#         scene_number = 1
+#         while "scene " + str(scene_number) not in bpy.data.scenes:
+#             scene_number += 1
+#         bpy.data.scenes.new(name="scene" )
+
+        return {'FINISHED'}
+    
+
+class SCENE_PT_outliner(Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'TOOLS'
     bl_label = "Layer Management"
@@ -556,6 +573,8 @@ class SCENE_PT_namedlayer_layers(Panel):
         if len(bpy.data.scenes) > 0:
             layout.template_list("FD_UL_scenes", "", bpy.data, "scenes", context.scene.outliner, "selected_scene_index", rows=4)
             unit = context.scene.unit_settings
+            
+            layout.operator("scene.create_new_scene",icon='ZOOMIN')
             
             split = layout.split(percentage=0.35)
             split.label("Unit Type:")
@@ -690,17 +709,18 @@ class SCENE_PT_namedlayer_groups(Panel):
 class FD_UL_objects(UIList):
     
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        if item.type == 'MESH':
-            layout.label(item.name,icon='OUTLINER_OB_MESH')
-        if item.type == 'EMPTY':
-            layout.label(item.name,icon='OUTLINER_OB_EMPTY')
-        if item.type == 'CAMERA':
-            layout.label(item.name,icon='OUTLINER_OB_CAMERA')
-        if item.type == 'LAMP':
-            layout.label(item.name,icon='OUTLINER_OB_LAMP')                        
-        layout.prop(item,'hide',emboss=False,icon_only=True)
-        layout.prop(item,'hide_select',emboss=False,icon_only=True)
-        layout.prop(item,'hide_render',emboss=False,icon_only=True)
+        if not item.parent:
+            if item.type == 'MESH':
+                layout.label(item.name,icon='OUTLINER_OB_MESH')
+            if item.type == 'EMPTY':
+                layout.label(item.name,icon='OUTLINER_OB_EMPTY')
+            if item.type == 'CAMERA':
+                layout.label(item.name,icon='OUTLINER_OB_CAMERA')
+            if item.type == 'LAMP':
+                layout.label(item.name,icon='OUTLINER_OB_LAMP')                        
+            layout.prop(item,'hide',emboss=False,icon_only=True)
+            layout.prop(item,'hide_select',emboss=False,icon_only=True)
+            layout.prop(item,'hide_render',emboss=False,icon_only=True)
 
 class FD_UL_worlds(UIList):
     
@@ -726,7 +746,7 @@ class FD_UL_groups(UIList):
 
 # Define Panel classes for updating
 panels = (
-        SCENE_PT_namedlayer_layers,
+        SCENE_PT_outliner,
         SCENE_PT_namedlayer_groups,
         )
 
@@ -779,6 +799,8 @@ def register():
     bpy.utils.register_class(NamedLayers)
     bpy.utils.register_class(LayerGroup)
     bpy.utils.register_class(Outliner)
+    
+    bpy.utils.register_class(SCENE_OT_create_new_scene)
     bpy.utils.register_class(SCENE_OT_namedlayer_group_add)
     bpy.utils.register_class(SCENE_OT_namedlayer_group_remove)
     bpy.utils.register_class(SCENE_OT_namedlayer_toggle_visibility)
@@ -787,7 +809,7 @@ def register():
     bpy.utils.register_class(SCENE_OT_namedlayer_lock_all)
     bpy.utils.register_class(SCENE_OT_namedlayer_select_objects_by_layer)
     bpy.utils.register_class(SCENE_OT_namedlayer_show_all)
-    bpy.utils.register_class(SCENE_PT_namedlayer_layers)
+    bpy.utils.register_class(SCENE_PT_outliner)
 #     bpy.utils.register_class(SCENE_UL_namedlayer_groups)
 #     bpy.utils.register_class(SCENE_PT_namedlayer_groups)
     bpy.utils.register_class(LayerMAddonPreferences)
@@ -821,7 +843,7 @@ def unregister():
     bpy.utils.unregister_class(SCENE_OT_namedlayer_lock_all)
     bpy.utils.unregister_class(SCENE_OT_namedlayer_select_objects_by_layer)
     bpy.utils.unregister_class(SCENE_OT_namedlayer_show_all)
-    bpy.utils.unregister_class(SCENE_PT_namedlayer_layers)
+    bpy.utils.unregister_class(SCENE_PT_outliner)
     bpy.utils.unregister_class(SCENE_UL_namedlayer_groups)
     bpy.utils.unregister_class(SCENE_PT_namedlayer_groups)
     bpy.utils.unregister_class(LayerMAddonPreferences)
